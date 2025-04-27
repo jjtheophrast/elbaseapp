@@ -48,16 +48,20 @@ class WizardNavigation extends StatelessWidget {
                   onPressed: onBack,
                   style: TextButton.styleFrom(
                     foregroundColor: primaryColor,
+                    minimumSize: const Size(82, 40),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
+                      horizontal: 16,
                       vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   child: Text(
                     'Back',
                     style: GoogleFonts.notoSans(
                       fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -68,16 +72,20 @@ class WizardNavigation extends StatelessWidget {
                   onPressed: onBackToReview,
                   style: TextButton.styleFrom(
                     foregroundColor: primaryColor,
+                    minimumSize: const Size(82, 40),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
+                      horizontal: 16,
                       vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   child: Text(
                     'Back to Review',
                     style: GoogleFonts.notoSans(
                       fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -97,14 +105,15 @@ class WizardNavigation extends StatelessWidget {
                     vertical: 10,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(100),
                   ),
+                  elevation: 0,
                 ),
                 child: Text(
                   isLastStep ? 'Start crawl!' : 'Next',
                   style: GoogleFonts.notoSans(
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

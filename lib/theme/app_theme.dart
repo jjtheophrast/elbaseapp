@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static late ColorScheme _colorScheme;
   static bool _isInitialized = false;
+
+  // Add a getter for the color scheme
+  static ColorScheme get colorScheme {
+    if (!_isInitialized) {
+      throw Exception('AppTheme must be initialized before accessing color scheme');
+    }
+    return _colorScheme;
+  }
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
@@ -34,6 +43,7 @@ class AppTheme {
       surfaceVariant: Color(int.parse(lightColors['surfaceVariant'].substring(1, 7), radix: 16) + 0xFF000000),
       onSurfaceVariant: Color(int.parse(lightColors['onSurfaceVariant'].substring(1, 7), radix: 16) + 0xFF000000),
       outline: Color(int.parse(lightColors['outline'].substring(1, 7), radix: 16) + 0xFF000000),
+      outlineVariant: Color(int.parse(lightColors['outlineVariant'].substring(1, 7), radix: 16) + 0xFF000000),
       shadow: Color(int.parse(lightColors['shadow'].substring(1, 7), radix: 16) + 0xFF000000),
     );
 
@@ -132,7 +142,7 @@ class AppTheme {
 
   // Custom text styles for restrictions screen
   static final TextStyle crs_BodyMonospace = TextStyle(
-    fontFamily: 'RobotoMono',
+    fontFamily: 'NotoSans',
     fontSize: 14,
     color: _colorScheme.onSurface,
   );
@@ -173,7 +183,7 @@ class AppTheme {
   );
 
   static final TextStyle crs_TypeMono = TextStyle(
-    fontFamily: 'NotoSansMono',
+    fontFamily: 'NotoSans',
     fontSize: 13,
     fontWeight: FontWeight.w500,
     color: Colors.black87,
@@ -185,17 +195,20 @@ class AppTheme {
       throw Exception('AppTheme must be initialized before accessing theme data');
     }
 
+    // Create a text theme using Google Fonts NotoSans
+    final notoSansTextTheme = GoogleFonts.notoSansTextTheme(textTheme);
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: _colorScheme,
-      textTheme: textTheme,
-      fontFamily: 'NotoSans',
+      textTheme: notoSansTextTheme,
+      fontFamily: GoogleFonts.notoSans().fontFamily,
       appBarTheme: AppBarTheme(
         backgroundColor: _colorScheme.surface,
         foregroundColor: _colorScheme.primary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: textTheme.titleMedium?.copyWith(
+        titleTextStyle: notoSansTextTheme.titleMedium?.copyWith(
           color: _colorScheme.primary,
           fontWeight: FontWeight.w600,
         ),
@@ -214,14 +227,14 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: _colorScheme.primary,
           foregroundColor: _colorScheme.onPrimary,
-          minimumSize: const Size(200, 0),
+          minimumSize: const Size(120, 40),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           elevation: 0,
-          textStyle: textTheme.bodyMedium?.copyWith(
-            fontSize: 16,
+          textStyle: notoSansTextTheme.bodyMedium?.copyWith(
+            fontSize: 14,
             height: 1.4285,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
           ),
         ).copyWith(
           iconSize: MaterialStateProperty.all(18),
@@ -243,28 +256,28 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: _colorScheme.primary,
-          minimumSize: const Size(200, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(120, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           side: BorderSide(color: _colorScheme.primary),
-          textStyle: textTheme.bodyMedium?.copyWith(
-            fontSize: 16,
+          textStyle: notoSansTextTheme.bodyMedium?.copyWith(
+            fontSize: 14,
             height: 1.4285,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
           ),
         ).copyWith(
           iconSize: MaterialStateProperty.all(18),
           iconColor: MaterialStateProperty.all(_colorScheme.primary),
           padding: MaterialStateProperty.resolveWith((states) {
             if (states.contains(MaterialState.disabled)) {
-              return const EdgeInsets.symmetric(horizontal: 24, vertical: 10);
+              return const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
             }
             // Check if button has icon
             return const EdgeInsets.only(
               top: 10,
               bottom: 10,
               left: 16,
-              right: 24,
+              right: 16,
             );
           }),
         ),
@@ -272,12 +285,13 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: _colorScheme.primary,
-          minimumSize: const Size(0, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          textStyle: textTheme.bodyMedium?.copyWith(
-            fontSize: 16,
+          minimumSize: const Size(82, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+          textStyle: notoSansTextTheme.bodyMedium?.copyWith(
+            fontSize: 14,
             height: 1.4285,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
           ),
         ).copyWith(
           iconSize: MaterialStateProperty.all(18),
@@ -361,8 +375,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         dense: true,
-        titleTextStyle: textTheme.bodyLarge,
-        subtitleTextStyle: textTheme.bodySmall,
+        titleTextStyle: notoSansTextTheme.bodyLarge,
+        subtitleTextStyle: notoSansTextTheme.bodySmall,
       ),
       dividerTheme: DividerThemeData(
         space: 16,
@@ -411,8 +425,8 @@ class AppTheme {
       dialogTheme: DialogTheme(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 1,
-        titleTextStyle: textTheme.titleLarge,
-        contentTextStyle: textTheme.bodyMedium,
+        titleTextStyle: notoSansTextTheme.titleLarge,
+        contentTextStyle: notoSansTextTheme.bodyMedium,
         backgroundColor: _colorScheme.surface,
       ),
       tooltipTheme: TooltipThemeData(
