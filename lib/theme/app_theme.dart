@@ -72,7 +72,7 @@ class AppTheme {
     ),
     titleLarge: TextStyle(
       fontWeight: FontWeight.w600,
-      fontSize: 18,
+      fontSize: 22,
       letterSpacing: 0,
       color: _colorScheme.onSurface,
     ),
@@ -233,7 +233,8 @@ class AppTheme {
           elevation: 0,
           textStyle: notoSansTextTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            height: 1.4285,
+            height: 1.43,
+            letterSpacing: 0.1,
             fontWeight: FontWeight.w500,
           ),
         ).copyWith(
@@ -243,7 +244,6 @@ class AppTheme {
             if (states.contains(MaterialState.disabled)) {
               return const EdgeInsets.symmetric(horizontal: 24, vertical: 10);
             }
-            // Check if button has icon
             return const EdgeInsets.only(
               top: 10,
               bottom: 10,
@@ -262,7 +262,8 @@ class AppTheme {
           side: BorderSide(color: _colorScheme.primary),
           textStyle: notoSansTextTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            height: 1.4285,
+            height: 1.43,
+            letterSpacing: 0.1,
             fontWeight: FontWeight.w500,
           ),
         ).copyWith(
@@ -272,12 +273,11 @@ class AppTheme {
             if (states.contains(MaterialState.disabled)) {
               return const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
             }
-            // Check if button has icon
             return const EdgeInsets.only(
               top: 10,
               bottom: 10,
               left: 16,
-              right: 16,
+              right: 24,
             );
           }),
         ),
@@ -290,7 +290,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           textStyle: notoSansTextTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            height: 1.4285,
+            height: 1.43,
+            letterSpacing: 0.1,
             fontWeight: FontWeight.w500,
           ),
         ).copyWith(

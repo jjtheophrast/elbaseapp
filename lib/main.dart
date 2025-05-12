@@ -1,15 +1,25 @@
 import 'package:elbaseapp/presentation/crawl_history/crawl_history_page.dart';
+import 'package:elbaseapp/presentation/crawl_history/crawl_model.dart'; // Needed for CrawlItem argument
 import 'package:elbaseapp/presentation/language_table/language_table_page.dart';
 import 'package:elbaseapp/theme/app_theme.dart' show AppTheme;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Import the new details page
+import 'package:elbaseapp/presentation/crawl_details/crawl_details_page.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Load NotoSans font
   GoogleFonts.notoSans();
   await AppTheme.initialize();
-  runApp(const MyApp());
+  runApp(
+    // Wrap the root widget with ProviderScope
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -21,18 +31,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Easyling Crawl Wizard',
       theme: AppTheme.lightTheme,
-      initialRoute: '/crawl-history',
+      // Remove initialRoute if /crawl-history is the only main page
+      // initialRoute: '/crawl-history',
+      home: const CrawlHistoryPage(), // Set home directly
       routes: {
-        '/crawl-history': (context) => const CrawlHistoryPage(),
+        // Keep named routes if needed for other navigation, 
+        // but remove /crawl-details if panel replaces it.
+        // '/crawl-history': (context) => const CrawlHistoryPage(), // Redundant if home is set
         '/languages': (context) => const LanguageTablePage(),
-        '/crawl-details': (context) => const HomeScreen(), // Placeholder for now
       },
-      home: const CrawlHistoryPage(),
+      // Remove onGenerateRoute if CrawlDetailsPage is no longer used
+      // onGenerateRoute: (settings) {
+      //   // ... existing logic ...
+      // },
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
+// HomeScreen can likely be removed if /crawl-details was its only purpose
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -65,7 +82,7 @@ class HomeScreen extends StatelessWidget {
               child: const Text('Go to Languages'),
             ),
           ],
-        ),
+        ), 
       ),
     );
   }

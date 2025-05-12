@@ -1,0 +1,1 @@
+enum SelectorType { radio, checkbox }

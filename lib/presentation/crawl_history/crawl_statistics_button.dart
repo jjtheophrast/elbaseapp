@@ -26,10 +26,6 @@ class CrawlStatisticsButton extends StatelessWidget {
           color: AppTheme.colorScheme.primary,
         ),
       ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: Size.zero,
-      ),
     );
   }
 

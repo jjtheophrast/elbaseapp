@@ -28,8 +28,6 @@ class WizardNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF266DAF);
-    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       color: Colors.white,
@@ -46,23 +44,8 @@ class WizardNavigation extends StatelessWidget {
               if (currentStep > 0)
                 TextButton(
                   onPressed: onBack,
-                  style: TextButton.styleFrom(
-                    foregroundColor: primaryColor,
-                    minimumSize: const Size(82, 40),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
                   child: Text(
                     'Back',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
                   ),
                 ),
               
@@ -70,23 +53,8 @@ class WizardNavigation extends StatelessWidget {
               if (isFromReviewStep && onBackToReview != null)
                 TextButton(
                   onPressed: onBackToReview,
-                  style: TextButton.styleFrom(
-                    foregroundColor: primaryColor,
-                    minimumSize: const Size(82, 40),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
                   child: Text(
                     'Back to Review',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
                   ),
                 ),
                 
@@ -96,25 +64,8 @@ class WizardNavigation extends StatelessWidget {
               // Next button
               ElevatedButton(
                 onPressed: canProceed ? (isLastStep ? onComplete : onNext) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(120, 40),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 10,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  elevation: 0,
-                ),
                 child: Text(
                   isLastStep ? 'Start crawl!' : 'Next',
-                  style: GoogleFonts.notoSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
                 ),
               ),
             ],
