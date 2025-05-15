@@ -140,6 +140,43 @@ class AppTheme {
     ),
   );
 
+  // Font weight extensions
+  static TextStyle bodySmallSemiBold() {
+    return textTheme.bodySmall!.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+  }
+
+  static TextStyle bodyMediumSemiBold() {
+    return textTheme.bodyMedium!.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+  }
+
+  static TextStyle bodyLargeSemiBold() {
+    return textTheme.bodyLarge!.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+  }
+
+  static TextStyle bodySmallRegular() {
+    return textTheme.bodySmall!.copyWith(
+      fontWeight: FontWeight.w400,
+    );
+  }
+
+  static TextStyle bodyMediumRegular() {
+    return textTheme.bodyMedium!.copyWith(
+      fontWeight: FontWeight.w400,
+    );
+  }
+
+  static TextStyle bodyLargeRegular() {
+    return textTheme.bodyLarge!.copyWith(
+      fontWeight: FontWeight.w400,
+    );
+  }
+
   // Custom text styles for restrictions screen
   static final TextStyle crs_BodyMonospace = TextStyle(
     fontFamily: 'NotoSans',

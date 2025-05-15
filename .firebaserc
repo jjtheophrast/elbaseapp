@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "ux": "easyling-ux-prototypes"
+  },
+  "targets": {
+    "easyling-ux-prototypes": {
+      "hosting": {
+        "crawlhistory": [
+          "crawlhistory"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

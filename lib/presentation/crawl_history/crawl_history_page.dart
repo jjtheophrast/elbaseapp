@@ -13,6 +13,7 @@ import '../widgets/buttons/button_color_config.dart';
 import '../widgets/buttons/el_button.dart';
 import '../widgets/buttons/el_button_config.dart';
 import 'package:material_symbols_icons/symbols.dart'; // Added Material Symbols icons
+import 'package:flutter/services.dart';
 
 // Define sortable columns globally
 enum SortableColumn { started, status, type, wordCount, visitedPages }
@@ -75,6 +76,9 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
   SortableColumn? _sortColumn = SortableColumn.started;
   bool _sortAscending = false; // Default sort: newest first
 
+  // Add a focus node for keyboard handling
+  final FocusNode _escKeyFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -82,9 +86,11 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     _loadInitialItems(); // Load initial page of items
     _sortData(); // Initial sort
 
-    // Set a default selected item for panels (first item in the list if available)
+    // Set a default item for fallback purposes only, but don't auto-select it
     if (_displayedCrawlItems.isNotEmpty) {
       _defaultCrawlItem = _displayedCrawlItems.first;
+      // Remove auto-selection of first item 
+      // _selectedCrawlItem = _displayedCrawlItems.first;
     }
 
     _tabController = TabController(
@@ -101,10 +107,47 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
           // Close the panel
           ref.read(crawlDetailsPanelProvider.notifier).state = null;
         }
+        
+        // Clear selection when switching tabs
+        if (_selectedCrawlItem != null) {
+          setState(() {
+            _selectedCrawlItem = null;
+          });
+        }
       }
       
       // Force refresh when tab changes to update the panel options
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+          // Update default item based on the current tab without selecting it
+          if (_tabController.index == 0) { // Crawl history tab
+            // Find a good default item for history tab
+            final historyItems = _displayedCrawlItems.where((item) => 
+                item.status != CrawlStatus.canceledSchedule).toList();
+            if (historyItems.isNotEmpty) {
+              _defaultCrawlItem = historyItems.first;
+              // Remove auto-selection of item when tab changes
+              // if (_selectedCrawlItem == null) {
+              //   _selectedCrawlItem = _defaultCrawlItem;
+              // }
+            }
+          } else { // Recurring crawls tab
+            // Find a good default item for recurring tab
+            final recurringItems = _allCrawlItems.where((item) {
+              final recurrenceLower = item.recurrence.toLowerCase();
+              return (recurrenceLower == 'weekly' || recurrenceLower == 'monthly') 
+                    && item.nextScheduledRun != null;
+            }).toList();
+            if (recurringItems.isNotEmpty) {
+              _defaultCrawlItem = recurringItems.first;
+              // Remove auto-selection of item when tab changes
+              // if (_selectedCrawlItem == null) {
+              //   _selectedCrawlItem = _defaultCrawlItem;
+              // }
+            }
+          }
+        });
+      }
     });
   }
   
@@ -231,6 +274,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
   @override
   void dispose() {
     _tabController.dispose();
+    _escKeyFocusNode.dispose(); // Dispose the focus node
     super.dispose();
   }
 
@@ -338,49 +382,57 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Crawl title and date
+                        // Crawl title and date on top
                         Text(
-                '${crawlItem.type} - ${DateFormat('MMM d, yyyy').format(DateTime.parse(crawlItem.startDate))}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-                        ),
-                        
-                        // Spacing between title and initiator info
-                        const SizedBox(height: 12),
-                        
-                        // Initiator email
-                        Text(
-                          'dseitova@skawa.hu',
-                          style: AppTheme.textTheme.bodyMedium?.copyWith(
+                          '${crawlItem.type} - ${DateFormat('MMM d, yyyy').format(DateTime.parse(crawlItem.startDate))}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         
-                        // Initiator key with tertiary color
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              'key: ',
-                              style: AppTheme.textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.colorScheme.tertiary,
+                        // Spacing between title and profile info
+                        const SizedBox(height: 16),
+                        
+                        // Container for profile info with alignment to the right
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Account information column
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Dilyara Seitova',
+                                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    'dseitova@skawa.hu',
+                                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  Text(
+                                    'key: 1115600133249752868870',
+                                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.colorScheme.tertiary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.colorScheme.tertiary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
+                              const SizedBox(width: 12),
+                              // Account icon
+                              Icon(
+                                Icons.account_circle_outlined,
+                                size: 40,
+                                color: AppTheme.colorScheme.primary,
                               ),
-                              child: Text(
-                                '1115600133249752868870',
-                                style: AppTheme.textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.colorScheme.tertiary,
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -436,8 +488,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                     padding: const EdgeInsets.only(bottom: 12.0, left: 4.0, top: 16.0),
                     child: Text(
               'Restrictions',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500, 
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600, 
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
@@ -637,8 +689,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                             
                             const SizedBox(height: 16),
                             Text(
-                    'Simultaneous requests: 8',
-                    style: AppTheme.textTheme.bodyMedium,
+                              'Simultaneous requests: 8',
+                              style: AppTheme.textTheme.bodyMedium,
                             ),
                           ],
                   ),
@@ -808,8 +860,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
             padding: const EdgeInsets.only(bottom: 12.0, left: 4.0, top: 16.0),
             child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500, 
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600, 
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -1038,8 +1090,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     final sortedItems = List<CrawlItem>.from(_allCrawlItems);
     final selectedPanel = ref.watch(crawlDetailsPanelProvider);
     
-    // If there's a selected crawl item, use it; otherwise use default for the panel builders
-    final itemForPanel = _selectedCrawlItem ?? _defaultCrawlItem;
+    // If there's a selected crawl item, use it; do NOT fall back to default item
+    final itemForPanel = _selectedCrawlItem;
     final panelBuilders = _buildPanelBuilders(context, ref, itemForPanel);
     
     // Calculate available width based on panel status
@@ -1048,237 +1100,331 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     // Check if we're in the recurring tab
     final bool isRecurringTab = _tabController.index == 1;
     
-    // Create panel destinations with disabled state for recurring tab
+    // Check if no item is selected
+    final bool noItemSelected = _selectedCrawlItem == null;
+    
+    // Define consistent tooltips for recurring tab and history tabs
+    final String recurringRequestsTooltip = 'Requests statistics are only available after a crawl has run';
+    final String recurringLogsTooltip = 'Logs are only available after a crawl has run';
+    final String settingsTooltip = 'Select a crawl from the table to view settings';
+    final String requestsTooltip = 'Select a crawl from the table to view request statistics';
+    final String logsTooltip = 'Select a crawl from the table to view logs';
+    
+    // Create panel destinations with appropriate disabled states and improved tooltips
     final List<ELRightPanelDestination> activePanelDestinations = [
-      _panelDestinations[0], // Settings Summary - always enabled
+      ELRightPanelDestination(
+        icon: _panelDestinations[0].icon,
+        label: _panelDestinations[0].label,
+        tooltip: isRecurringTab && noItemSelected
+            ? settingsTooltip
+            : (noItemSelected && !isRecurringTab
+                ? settingsTooltip 
+                : _panelDestinations[0].tooltip),
+        disabled: noItemSelected, // Disable when no item is selected
+      ),
       ELRightPanelDestination(
         icon: _panelDestinations[1].icon,
         label: _panelDestinations[1].label,
-        tooltip: _panelDestinations[1].tooltip,
-        disabled: isRecurringTab || (itemForPanel?.status == CrawlStatus.queued), // Disable Requests for queued crawls too
+        tooltip: isRecurringTab
+            ? recurringRequestsTooltip
+            : (noItemSelected 
+                ? requestsTooltip 
+                : (itemForPanel?.status == CrawlStatus.queued
+                    ? 'Requests data not yet available for queued crawls'
+                    : _panelDestinations[1].tooltip)),
+        disabled: noItemSelected || isRecurringTab || (itemForPanel?.status == CrawlStatus.queued),
       ),
       ELRightPanelDestination(
         icon: _panelDestinations[2].icon,
         label: _panelDestinations[2].label,
-        tooltip: _panelDestinations[2].tooltip,
-        disabled: isRecurringTab || (itemForPanel?.status == CrawlStatus.queued), // Disable Logs for queued crawls too
+        tooltip: isRecurringTab
+            ? recurringLogsTooltip
+            : (noItemSelected 
+                ? logsTooltip 
+                : (itemForPanel?.status == CrawlStatus.queued
+                    ? 'Log data not yet available for queued crawls'
+                    : _panelDestinations[2].tooltip)),
+        disabled: noItemSelected || isRecurringTab || (itemForPanel?.status == CrawlStatus.queued),
       ),
     ];
     
-    return Scaffold(
-      body: Column(
-        children: [
-          // Top app bar - blue (full width)
-          Container(
-            height: 60,
-            color: AppTheme.colorScheme.primary,
-            child: Row(
-              children: [
-                // Left sidebar icon
-                Container(
-                  width: 317,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Icon(Icons.menu, color: AppTheme.colorScheme.onPrimary),
-                ),
-                // Right area with domain, notifications, etc.
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _handleEscKeyPress,
+      },
+      child: Focus(
+        focusNode: _escKeyFocusNode,
+        autofocus: true,
+        child: GestureDetector(
+          // Close panel when tapping outside of it (on the main content area)
+          onTap: isPanelOpen 
+              ? () => ref.read(crawlDetailsPanelProvider.notifier).state = null
+              : null,
+          child: Scaffold(
+            body: GestureDetector(
+              // Stop event propagation to prevent closing when tapping inside the scaffold
+              onTap: () {},
+              child: Column(
+                children: [
+                  // Top app bar - blue (full width)
+                  Container(
+                    height: 60,
+                    color: AppTheme.colorScheme.primary,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        // Left sidebar icon
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.colorScheme.onPrimary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                'csega.hu',
-                                style: TextStyle(color: AppTheme.colorScheme.primary),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.arrow_drop_down, color: AppTheme.colorScheme.primary),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(Icons.notifications_outlined, color: AppTheme.colorScheme.onPrimary),
-                        const SizedBox(width: 16),
-                        Icon(Icons.help_outline, color: AppTheme.colorScheme.onPrimary),
-                        const SizedBox(width: 16),
-                        CircleAvatar(
-                          backgroundColor: AppTheme.colorScheme.onPrimary,
-                          radius: 16,
-                          child: Icon(Icons.person, color: AppTheme.colorScheme.primary, size: 20),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Main content and side panels below the top app bar
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left sidebar with blue background
-                SizedBox(
-                  width: 317,
-                  child: Container(
-                    color: const Color(0xFFF2F5FC), // Light blue background
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        _buildSetupMenuItem(context),
-                        _buildMenuItem(
-                          context,
-                          'Site content',
-                          Icons.article_outlined,
-                          false,
-                          hasSubmenu: true,
-                        ),
-                        _buildMenuItem(
-                          context,
-                          'Team',
-                          Icons.people_outlined,
-                          false,
-                        ),
-                        _buildMenuItem(
-                          context,
-                          'Manage translations',
-                          Icons.edit_note_outlined,
-                          false,
-                        ),
-                        _buildSubMenuItem(context, 'Crawls', isSelected: true),
-                        _buildMenuItem(
-                          context,
-                          'Subscription',
-                          Icons.credit_card_outlined,
-                          false,
-                        ),
-                        _buildMenuItem(
-                          context,
-                          'Settings',
-                          Icons.settings_outlined,
-                          false,
-                          hasSubmenu: true,
-                        ),
-                        _buildBottomSection(context),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Main content area with fixed width based on panel state
-                Expanded(
-                  child: DefaultTabController(
-                    length: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Page title header
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          width: 317,
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Crawls',
-                            style: AppTheme.textTheme.titleLarge?.copyWith(
-                              color: AppTheme.colorScheme.onSurface,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Icon(Icons.menu, color: AppTheme.colorScheme.onPrimary),
+                        ),
+                        // Right area with domain, notifications, etc.
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.colorScheme.onPrimary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'csega.hu',
+                                        style: TextStyle(color: AppTheme.colorScheme.primary),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(Icons.arrow_drop_down, color: AppTheme.colorScheme.primary),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(Icons.notifications_outlined, color: AppTheme.colorScheme.onPrimary),
+                                const SizedBox(width: 16),
+                                Icon(Icons.help_outline, color: AppTheme.colorScheme.onPrimary),
+                                const SizedBox(width: 16),
+                                // Simple avatar matching the reference image
+                                CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: const Color(0xFFE3EDFB),
+                                  child: Icon(
+                                    Icons.account_circle_outlined,
+                                    color: AppTheme.colorScheme.primary,
+                                    size: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Main content and side panels below the top app bar
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left sidebar with blue background
+                        SizedBox(
+                          width: 317,
+                          child: GestureDetector(
+                            // Stop propagation for left sidebar to prevent panel closing
+                            onTap: () {},
+                            child: Container(
+                              color: const Color(0xFFF2F5FC), // Light blue background
+                              child: ListView(
+                                padding: EdgeInsets.zero,
+                                children: [
+                                  _buildSetupMenuItem(context),
+                                  _buildMenuItem(
+                                    context,
+                                    'Site content',
+                                    Icons.article_outlined,
+                                    false,
+                                    hasSubmenu: true,
+                                  ),
+                                  _buildMenuItem(
+                                    context,
+                                    'Team',
+                                    Icons.people_outlined,
+                                    false,
+                                  ),
+                                  _buildMenuItem(
+                                    context,
+                                    'Manage translations',
+                                    Icons.edit_note_outlined,
+                                    false,
+                                  ),
+                                  _buildSubMenuItem(context, 'Crawls', isSelected: true),
+                                  _buildMenuItem(
+                                    context,
+                                    'Subscription',
+                                    Icons.credit_card_outlined,
+                                    false,
+                                  ),
+                                  _buildMenuItem(
+                                    context,
+                                    'Settings',
+                                    Icons.settings_outlined,
+                                    false,
+                                    hasSubmenu: true,
+                                  ),
+                                  _buildBottomSection(context),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                         
-                        // Thin divider
-                        Container(
-                          margin: const EdgeInsets.only(top: 0.5),
-                          height: 0.5,
-                          color: AppTheme.colorScheme.outlineVariant,
-                        ),
-                        
-                        // New position for the Start new crawl button
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              ELButton(
-                                config: ELButtonConfig(
-                                  title: 'Start new crawl',
-                                  colorConfig: ButtonColorConfig(ButtonColorType.filledPrimary, context),
-                                  icon: Icons.add,
-                                ),
-                                onPressed: () {
-                                  // Handle start new crawl action
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // TabBar moved here
-                        TabBar(
-                          controller: _tabController,
-                          tabs: const [
-                            Tab(text: 'Crawl history'),
-                            Tab(text: 'Recurring crawls'),
-                          ],
-                          labelColor: AppTheme.colorScheme.primary,
-                          unselectedLabelColor: AppTheme.colorScheme.onSurfaceVariant,
-                          indicatorColor: AppTheme.colorScheme.primary,
-                          indicatorSize: TabBarIndicatorSize.label,
-                          dividerColor: AppTheme.colorScheme.outlineVariant,
-                          labelStyle: AppTheme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                          unselectedLabelStyle: AppTheme.textTheme.labelLarge,
-                          // Add these properties to make tabs more compact
-                          isScrollable: true,
-                          tabAlignment: TabAlignment.start,
-                          padding: EdgeInsets.zero,
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                        ),
-
-                        // TabBarView - Expanded to fill remaining space with properly nested scrolling
+                        // Main content area with fixed width based on panel state
                         Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: [
-                              // Pass isPanelOpen state to the tab builders
-                              _buildCrawlHistoryTab(sortedItems, isPanelOpen),
-                              _buildRecurringCrawlsTab(isPanelOpen),
-                            ],
+                          child: GestureDetector(
+                            // Stop propagation for main content to prevent panel closing when interacting with it
+                            onTap: () {},
+                            child: DefaultTabController(
+                              length: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Page title header
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Crawls',
+                                      style: AppTheme.textTheme.titleLarge?.copyWith(
+                                        color: AppTheme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Thin divider
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 0.5),
+                                    height: 0.5,
+                                    color: AppTheme.colorScheme.outlineVariant,
+                                  ),
+                                  
+                                  // Add space above the tabs (24px)
+                                  const SizedBox(height: 24),
+                                  
+                                  // Tabs row with button - place them in the same row
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end, // Align items to bottom of the row
+                                    children: [
+                                      // TabBar - make it take available space but leave room for button
+                                      Expanded(
+                                        child: TabBar(
+                                          controller: _tabController,
+                                          tabs: const [
+                                            Tab(text: 'Crawl history'),
+                                            Tab(text: 'Recurring crawls'),
+                                          ],
+                                          labelColor: AppTheme.colorScheme.primary,
+                                          unselectedLabelColor: AppTheme.colorScheme.onSurfaceVariant,
+                                          indicatorColor: AppTheme.colorScheme.primary,
+                                          indicatorSize: TabBarIndicatorSize.tab, // Changed from label to tab to extend indicator
+                                          dividerColor: Colors.transparent, // Hide default divider since we're using a custom one
+                                          labelStyle: AppTheme.textTheme.labelLarge?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          unselectedLabelStyle: AppTheme.textTheme.labelLarge,
+                                          // Add these properties to make tabs more compact
+                                          isScrollable: true,
+                                          tabAlignment: TabAlignment.start,
+                                          padding: const EdgeInsets.only(left: 24), // Add left padding to align with container
+                                          labelPadding: const EdgeInsets.symmetric(horizontal: 24),
+                                        ),
+                                      ),
+                                      
+                                      // Start new crawl button - right aligned
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 24, bottom: 4),
+                                        child: ELButton(
+                                          config: ELButtonConfig(
+                                            title: 'Start new crawl',
+                                            colorConfig: ButtonColorConfig(ButtonColorType.filledPrimary, context),
+                                            icon: Icons.add,
+                                          ),
+                                          onPressed: () {
+                                            // Handle start new crawl action
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  
+                                  // Full-width divider for the tabs - this is a separate widget below the tabs
+                                  Container(
+                                    height: 1,
+                                    color: AppTheme.colorScheme.outlineVariant,
+                                  ),
+
+                                  // TabBarView - Expanded to fill remaining space with properly nested scrolling
+                                  Expanded(
+                                    child: TabBarView(
+                                      controller: _tabController,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      children: [
+                                        // Pass isPanelOpen state to the tab builders
+                                        _buildCrawlHistoryTab(sortedItems, isPanelOpen),
+                                        _buildRecurringCrawlsTab(isPanelOpen),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        // Right rail with integrated panel - wrapped in GestureDetector to stop propagation
+                        GestureDetector(
+                          // Stop propagation for right rail and panel to prevent closing when interacting with them
+                          onTap: () {},
+                          child: ELRightPanelRail<CrawlDetailsPanel>(
+                            panelProvider: crawlDetailsPanelProvider,
+                            availableOptions: CrawlDetailsPanel.values,
+                            destinations: activePanelDestinations,
+                            panelBuilders: panelBuilders,
+                            onDestinationSelected: (index) {
+                              // Only allow selecting enabled destinations
+                              if (!activePanelDestinations[index].disabled) {
+                                _handlePanelIconClick(CrawlDetailsPanel.values[index]);
+                              }
+                            },
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                
-                // Right rail with integrated panel
-                ELRightPanelRail<CrawlDetailsPanel>(
-                  panelProvider: crawlDetailsPanelProvider,
-                  availableOptions: CrawlDetailsPanel.values,
-                  destinations: activePanelDestinations,
-                  panelBuilders: panelBuilders,
-                  onDestinationSelected: (index) {
-                    // Only allow selecting enabled destinations
-                    if (!activePanelDestinations[index].disabled) {
-                      _handlePanelIconClick(CrawlDetailsPanel.values[index]);
-                    }
-                  },
-                ),
-              ],
+                  
+                  // Bottom toolbar placeholder - 30px tall
+                  Container(
+                    height: 30,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: AppTheme.colorScheme.outlineVariant,
+                          width: 1,
+                        ),
+                      ),
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1523,7 +1669,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     // No need to change state in this case as we just want to update the displayed item
   }
   
-  // Handle panel icon click directly 
+  // Handle panel icon click with improved guidance for when no item is selected
   void _handlePanelIconClick(CrawlDetailsPanel panel) {
     // If clicking the same panel that's already open, close it
     final currentPanel = ref.read(crawlDetailsPanelProvider);
@@ -1532,9 +1678,35 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
       return;
     }
     
-    // If no item selected yet, use the default
+    // If no item is selected, show guidance to the user
     if (_selectedCrawlItem == null) {
-      _selectedCrawlItem = _defaultCrawlItem;
+      // Determine the appropriate message for the current tab
+      final String message = _tabController.index == 0
+          ? 'Please select a crawl item from the table to view details'
+          : 'Please select a recurring crawl from the table to view details';
+      
+      // Show guidance snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: AppTheme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.colorScheme.onPrimary,
+            ),
+          ),
+          backgroundColor: AppTheme.colorScheme.primary,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: AppTheme.colorScheme.onPrimary,
+            onPressed: () {
+              // Dismiss the snackbar
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+      return;
     }
     
     // Check if we're in the recurring tab
@@ -1702,41 +1874,11 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                       item.status == CrawlStatus.failed || 
                       item.status == CrawlStatus.inProgress || 
                       item.status == CrawlStatus.running ||
-                      item.status == CrawlStatus.canceled ||
-                      item.status == CrawlStatus.canceledSchedule;
+                      item.status == CrawlStatus.canceled;
         
         List<PopupMenuEntry<String>> menuItems = [];
 
-        // Rerun with same settings - always show but disable if running/in progress
-        menuItems.add(
-          PopupMenuItem<String>(
-            value: 'rerun',
-            enabled: !isRunningOrInProgress,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.refresh,
-                  color: !isRunningOrInProgress
-                      ? AppTheme.colorScheme.onSurface.withOpacity(0.6)
-                      : AppTheme.colorScheme.onSurface.withOpacity(0.3),
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Rerun with same settings',
-                  style: AppTheme.textTheme.bodyMedium?.copyWith(
-                    color: !isRunningOrInProgress
-                        ? AppTheme.colorScheme.onSurface
-                        : AppTheme.colorScheme.onSurface.withOpacity(0.3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        // Add view statistics option
+        // 1. View statistics option - First item
         if (showStats) {
           menuItems.add(
             PopupMenuItem<String>(
@@ -1762,56 +1904,68 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
           );
         }
 
-        // Conditional Actions
-        if (isQueued) {
-          // If Queued, what actions should be available? 
-          // Maybe just 'Cancel crawl'? 
-           menuItems.add(
-             PopupMenuItem<String>(
-               value: 'cancel', // Re-use cancel action
-               child: Row(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   Icon(
-                     Icons.cancel_outlined, // Keep cancel icon
-                     color: AppTheme.colorScheme.error,
-                     size: 18,
-                   ),
-                   const SizedBox(width: 8),
-                   Text(
-                     'Cancel crawl',
-                     style: AppTheme.textTheme.bodyMedium?.copyWith(
-                       color: AppTheme.colorScheme.error,
-                     ),
-                   ),
-                 ],
-               ),
-             ),
-           );
-        } else if (isRunningOrInProgress) {
-          // If Running or InProgress, show Refresh first, then Cancel Crawl
+        // 2. Refresh status - Second item (only for running/in progress)
+        if (isRunningOrInProgress) {
           menuItems.add(
             PopupMenuItem<String>(
-              value: 'refresh', // New value for refresh action
+              value: 'refresh',
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.refresh, // Refresh icon
-                    color: AppTheme.colorScheme.onSurface.withOpacity(0.6), // Changed to onSurface
+                    Icons.refresh,
+                    color: AppTheme.colorScheme.onSurface.withOpacity(0.6),
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Refresh status',
                     style: AppTheme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.colorScheme.onSurface, // Changed from primary to onSurface
+                      color: AppTheme.colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
             ),
           );
+        }
+
+        // 3. Rerun with same settings - Last item (only for completed, failed, or canceled crawls)
+        if (item.status == CrawlStatus.completed || 
+            item.status == CrawlStatus.failed || 
+            item.status == CrawlStatus.canceled || 
+            item.status == CrawlStatus.canceledSchedule) {
+          menuItems.add(
+            PopupMenuItem<String>(
+              value: 'rerun',
+              enabled: !isRunningOrInProgress,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh,
+                    color: !isRunningOrInProgress
+                        ? AppTheme.colorScheme.onSurface.withOpacity(0.6)
+                        : AppTheme.colorScheme.onSurface.withOpacity(0.3),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Rerun with same settings',
+                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                      color: !isRunningOrInProgress
+                          ? AppTheme.colorScheme.onSurface
+                          : AppTheme.colorScheme.onSurface.withOpacity(0.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // 4. Cancel crawl - Last item (if queued or running/in progress)
+        if (isQueued || isRunningOrInProgress) {
           menuItems.add(
             PopupMenuItem<String>(
               value: 'cancel',
@@ -2140,8 +2294,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                           headingRowColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
                                             return AppTheme.colorScheme.surfaceVariant.withOpacity(0.5);
                                           }),
-                                          headingTextStyle: AppTheme.textTheme.bodySmall?.copyWith(
-                                            fontWeight: FontWeight.w400,
+                                          headingTextStyle: AppTheme.bodySmallSemiBold().copyWith(
                                             color: AppTheme.colorScheme.onSurfaceVariant,
                                           ),
                                           dataTextStyle: AppTheme.textTheme.bodyMedium?.copyWith(
@@ -2157,9 +2310,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                                 alignment: Alignment.centerLeft,
                                                 child: Text(
                                                   'Started',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                               ),
@@ -2170,9 +2322,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                                 alignment: Alignment.centerLeft,
                                                 child: Text(
                                                   'Type',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                               ),
@@ -2183,9 +2334,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                                 alignment: Alignment.centerRight,
                                                 child: Text(
                                                   'Visited pages',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                   textAlign: TextAlign.right,
                                                 ),
@@ -2199,9 +2349,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                                 padding: const EdgeInsets.only(left: 12.0), // Align with ELButton's internal icon padding
                                                 child: Text(
                                                   'Word count',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                   textAlign: TextAlign.left,
                                                 ),
@@ -2214,9 +2363,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                                 alignment: Alignment.centerLeft,
                                                 child: Text(
                                                   'Status',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                               ),
@@ -2224,14 +2372,14 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                             DataColumn(
                                               label: Container(
                                                 width: 80, // Slightly wider for action buttons
-                                                alignment: Alignment.center,
+                                                alignment: Alignment.center, // Changed to center alignment
+                                                padding: const EdgeInsets.symmetric(horizontal: 16), // Added padding to match recurring table
                                                 child: Text(
                                                   'Actions',
-                                                  style: AppTheme.textTheme.bodySmall?.copyWith(
+                                                  style: AppTheme.bodySmallSemiBold().copyWith(
                                                     color: AppTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.w400,
                                                   ),
-                                                  textAlign: TextAlign.center,
+                                                  textAlign: TextAlign.center, // Added to ensure text is centered
                                                 ),
                                               ),
                                             ),
@@ -2329,8 +2477,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                             }),
                             dividerThickness: 1,
                             showBottomBorder: true,
-                            headingTextStyle: AppTheme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w400,
+                            headingTextStyle: AppTheme.bodySmallSemiBold().copyWith(
                               color: AppTheme.colorScheme.onSurfaceVariant,
                             ),
                             columns: [
@@ -2340,9 +2487,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
                                     'Repeats every',
-                                    style: AppTheme.textTheme.bodySmall?.copyWith(
+                                    style: AppTheme.bodySmallSemiBold().copyWith(
                                       color: AppTheme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -2353,9 +2499,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
                                     'Next run date',
-                                    style: AppTheme.textTheme.bodySmall?.copyWith(
+                                    style: AppTheme.bodySmallSemiBold().copyWith(
                                       color: AppTheme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -2366,9 +2511,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
                                     'Type',
-                                    style: AppTheme.textTheme.bodySmall?.copyWith(
+                                    style: AppTheme.bodySmallSemiBold().copyWith(
                                       color: AppTheme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -2380,9 +2524,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                                   alignment: Alignment.center,
                                   child: Text(
                                     'Actions',
-                                    style: AppTheme.textTheme.bodySmall?.copyWith(
+                                    style: AppTheme.bodySmallSemiBold().copyWith(
                                       color: AppTheme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -2455,12 +2598,22 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
         }
     }
 
+    // Check if this item is selected
+    final bool isSelected = _selectedCrawlItem?.type == item.type && 
+                           _selectedCrawlItem?.startDate == item.startDate;
+
     return DataRow(
+      color: MaterialStateProperty.resolveWith<Color?>(
+        (Set<MaterialState> states) {
+          if (isSelected) return AppTheme.colorScheme.primaryContainer.withOpacity(0.3);
+          if (states.contains(MaterialState.hovered)) return AppTheme.colorScheme.surfaceVariant.withOpacity(0.5);
+          return null; // Use default value
+        },
+      ),
+      onSelectChanged: (_) => _viewCrawlDetails(context, item, isRecurringView: true),
       cells: [
-        // Repeats every cell - CLICKABLE
+        // Repeats every cell
         DataCell(
-          _buildClickableCellRecurring(
-            context,
           Container(
             width: repeatsWidth,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2470,13 +2623,9 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
               overflow: TextOverflow.ellipsis,
             ),
           ),
-            item,
         ),
-        ),
-        // Next run date cell - CLICKABLE
+        // Next run date cell
         DataCell(
-          _buildClickableCellRecurring(
-            context,
           Container(
             width: dateWidth,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2486,13 +2635,9 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
               overflow: TextOverflow.ellipsis,
             ),
           ),
-            item,
         ),
-        ),
-        // Type cell - CLICKABLE
+        // Type cell
         DataCell(
-          _buildClickableCellRecurring(
-            context,
           Container(
             width: typeWidth,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2502,16 +2647,15 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
               overflow: TextOverflow.ellipsis,
             ),
           ),
-            item,
         ),
-        ),
-        // Actions cell - NOT CLICKABLE
+        // Actions cell - keep the popup menu unaffected by row clicks
         DataCell(
           Container(
             width: actionsWidth,
             alignment: Alignment.center,
             child: _buildRecurringPopupMenu(context, item),
           ),
+          onTap: () {}, // Empty onTap to prevent row click from propagating
         ),
       ],
     );
@@ -2525,22 +2669,34 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                       item.status == CrawlStatus.failed || 
                       item.status == CrawlStatus.inProgress || 
                       item.status == CrawlStatus.running ||
-                      item.status == CrawlStatus.canceled ||
-                      item.status == CrawlStatus.canceledSchedule;
+                      item.status == CrawlStatus.canceled;
     final hasWarnings = item.warnings != null && item.warnings!.isNotEmpty;
     final hasTerminationReason = item.terminationReason != null && item.terminationReason!.isNotEmpty;
     
     final numberFormat = NumberFormat.decimalPattern();
-    final formattedVisitedPages = numberFormat.format(item.visitedPages);
+    String formattedVisitedPages;
     String pageLimitDisplay;
-    if (item.status == CrawlStatus.failed && item.visitedPages == 73) {
-      pageLimitDisplay = " / ∞";
-    } else if (item.pageLimit != null) {
+    
+    // For queued or canceled schedule, show 0 visited pages
+    if (item.status == CrawlStatus.queued || item.status == CrawlStatus.canceledSchedule) {
+      formattedVisitedPages = "0";
+      pageLimitDisplay = item.pageLimit != null ? " / ${numberFormat.format(item.pageLimit!)}" : "";
+    } else if (item.status == CrawlStatus.failed && item.visitedPages == 73) {
+      formattedVisitedPages = numberFormat.format(item.visitedPages);
+      pageLimitDisplay = " / -";  // Changed from ∞ to -
+    } else if (item.terminationReason == "No more pages left" && item.pageLimit != null) {
+      // When terminated due to no more pages, show full limit
+      formattedVisitedPages = numberFormat.format(item.pageLimit!);
       pageLimitDisplay = " / ${numberFormat.format(item.pageLimit!)}";
     } else {
-      pageLimitDisplay = ""; // No page limit to display
+      formattedVisitedPages = numberFormat.format(item.visitedPages);
+      pageLimitDisplay = item.pageLimit != null ? " / ${numberFormat.format(item.pageLimit!)}" : "";
     }
-    final formattedWordCount = numberFormat.format(item.wordCount);
+    
+    // Only show word count if not queued or canceled schedule
+    final formattedWordCount = (item.status == CrawlStatus.queued || item.status == CrawlStatus.canceledSchedule) 
+        ? "" 
+        : numberFormat.format(item.wordCount);
 
     // Parse datetime and format with time
     final DateTime startDateTime = DateTime.parse(item.startDate);
@@ -2548,63 +2704,71 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     final String timeDisplay = DateFormat('HH:mm:ss').format(startDateTime);
 
     return DataRow(
-      color: isSelected
-          ? MaterialStateProperty.all(Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1))
-          : null,
+      color: MaterialStateProperty.resolveWith<Color?>(
+        (Set<MaterialState> states) {
+          if (isSelected) return AppTheme.colorScheme.primaryContainer.withOpacity(0.3);
+          if (states.contains(MaterialState.hovered)) return AppTheme.colorScheme.surfaceVariant.withOpacity(0.5);
+          return null; // Use default value
+        },
+      ),
+      onSelectChanged: (_) => _viewCrawlDetails(context, item),
       cells: [
-        // Start date cell - CLICKABLE
+        // Start date cell
         DataCell(
-          _buildClickableCell(
-            context,
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dateDisplay,
-                  style: AppTheme.textTheme.bodyMedium,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateDisplay,
+                style: AppTheme.textTheme.bodyMedium,
+              ),
+              Text(
+                timeDisplay,
+                style: AppTheme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.colorScheme.onSurfaceVariant,
                 ),
-                Text(
-                  timeDisplay,
-                  style: AppTheme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+        // Type cell
+        DataCell(
+          Text(item.type, overflow: TextOverflow.ellipsis),
+        ),
+        // Visited Pages cell
+        DataCell(
+          Container(
+            alignment: Alignment.centerRight,
+            child: Text('$formattedVisitedPages$pageLimitDisplay'),
+          ),
+        ),
+        // Word Count cell - Special case with specific click behavior
+        DataCell(
+          Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 12.0),
+            child: item.wordCount > 0
+              ? HoverableTextLink(
+                  text: formattedWordCount,
+                  icon: showStats ? Symbols.data_info_alert : null,
+                  onTap: showStats ? () => _viewStatistics(context, item) : null,
+                  enabled: showStats,
+                  iconSize: (AppTheme.textTheme.bodyMedium?.fontSize ?? 14.0) + 8,
+                  iconColor: AppTheme.colorScheme.primary,
+                  textStyle: AppTheme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.colorScheme.primary,
                   ),
+                  makeBoldOnHover: true,
+                )
+              : Text(
+                  '',
+                  style: AppTheme.textTheme.bodyMedium,
+                  textAlign: TextAlign.left,
                 ),
-              ],
-            ),
-            item,
           ),
         ),
-        // Type cell - CLICKABLE
-        DataCell(
-          _buildClickableCell(
-            context,
-            Text(item.type, overflow: TextOverflow.ellipsis),
-            item,
-          ),
-        ),
-        // Visited Pages cell - CLICKABLE
-        DataCell(
-          _buildClickableCell(
-            context,
-            Container(
-              alignment: Alignment.centerRight,
-              // child: Text('$formattedVisitedPages${formattedPageLimit != null ? " / $formattedPageLimit" : ""}'),
-              child: Text('$formattedVisitedPages$pageLimitDisplay'),
-            ),
-            item,
-          ),
-        ),
-        // Word Count cell - CLICKABLE for Statistics
-        DataCell(
-          _buildClickableWordCountCell(
-            context,
-            formattedWordCount,
-            item,
-            showStats,
-          ),
-        ),
-        // Status cell - NOT CLICKABLE
+        // Status cell
         DataCell(
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2634,22 +2798,22 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                   padding: const EdgeInsets.only(top: 4.0),
                   child: HoverableTextLink(
                     text: 'Warnings${item.warnings!.length > 1 ? " (${item.warnings!.length})" : ""}',
-                    icon: Icons.warning_amber_outlined,
                     onTap: () => _showWarningsDialog(context, item.warnings!, item),
                     enabled: true,
-                    iconSize: 16,
                     textStyle: AppTheme.textTheme.bodySmall,
                   ),
                 ),
             ],
           ),
         ),
-        // Actions cell - NOT CLICKABLE
+        // Actions cell - keep the popup menu unaffected by row clicks
         DataCell(
           Container(
+            width: 80,
             alignment: Alignment.center,
             child: _buildPopupMenu(context, item, _addItem),
           ),
+          onTap: () {}, // Empty onTap to prevent row click from propagating to this cell
         ),
       ],
     );
@@ -2808,45 +2972,14 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     });
   }
 
-  // Updated helper method to build a clickable data cell with hand cursor
-  Widget _buildClickableCell(BuildContext context, Widget child, CrawlItem item) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
-          setState(() {
-            _selectedCrawlItem = item;
-          });
-          _viewCrawlDetails(context, item);
-        },
-        child: child,
-      ),
-    );
-  }
-
-  // Updated helper method for recurring crawls with hand cursor
-  Widget _buildClickableCellRecurring(BuildContext context, Widget child, CrawlItem item) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
-          setState(() {
-            _selectedCrawlItem = item;
-          });
-          _viewCrawlDetails(context, item, isRecurringView: true);
-        },
-        child: child,
-      ),
-    );
-  }
-
   // New helper method to build a clickable word count cell
   Widget _buildClickableWordCountCell(BuildContext context, String wordCount, CrawlItem item, bool showStats) {
     // Check if word count is 0
     final bool hasWordCount = item.wordCount > 0;
     final formattedCount = hasWordCount ? wordCount : '';
+    
+    // Get the base font size to calculate icon size
+    final baseFontSize = AppTheme.textTheme.bodyMedium?.fontSize ?? 14.0;
     
     return Container(
       alignment: Alignment.centerLeft,
@@ -2857,7 +2990,12 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
             icon: showStats ? Symbols.data_info_alert : null,
             onTap: showStats ? () => _viewStatistics(context, item) : null,
             enabled: showStats,
-            iconSize: 20,
+            iconSize: baseFontSize + 8, // Increased from +6 to +8 to make it larger
+            iconColor: AppTheme.colorScheme.primary,
+            textStyle: AppTheme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.colorScheme.primary,
+            ),
+            makeBoldOnHover: true,
           )
         : Text(
             '',
@@ -2865,6 +3003,14 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
             textAlign: TextAlign.left,
           ),
     );
+  }
+
+  // Add method to handle ESC key press
+  void _handleEscKeyPress() {
+    final selectedPanel = ref.read(crawlDetailsPanelProvider);
+    if (selectedPanel != null) {
+      ref.read(crawlDetailsPanelProvider.notifier).state = null;
+    }
   }
 }
 
@@ -3138,14 +3284,56 @@ void _showLogAnalysisDialog(
   bool hasParameters,
   Map<String, String> parameters
 ) {
+  // Create an expanded list of parameters to demonstrate scrolling
+  final Map<String, String> expandedParameters = {
+    'page': '5',
+    'sort': 'desc',
+    'limit': '20',
+    'filter': 'active',
+    'view': 'full',
+    'mode': 'advanced',
+    'include_images': 'true',
+    'include_js': 'false',
+    'include_css': 'true',
+    'follow_redirects': 'true',
+    'max_redirects': '3',
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'timeout': '30000',
+    'retry_count': '2',
+    'depth': '3',
+    'crawl_delay': '500',
+    'respect_robots_txt': 'true',
+    'cookies_enabled': 'true',
+    'skip_ssl_verification': 'false',
+    'preserve_fragments': 'false',
+    'log_level': 'info',
+    'connection_timeout': '30000',
+    'read_timeout': '30000',
+    'accept_language': 'en-US,en;q=0.9',
+    'capture_console': 'true',
+    'wait_for_selector': '.main-content',
+    'wait_time': '5000',
+    'js_enabled': 'true',
+    'ignore_ssl_errors': 'false',
+    'max_concurrent_requests': '4',
+    'max_request_retries': '3',
+    'store_screenshots': 'false',
+    'viewport_width': '1366',
+    'viewport_height': '768',
+    'emulate_mobile': 'false',
+    'cache_ttl': '3600',
+    'output_format': 'json',
+    'parse_selectors': 'h1,h2,p.content',
+    'extract_metadata': 'true',
+    'follow_sitemap': 'true'
+  };
+
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(
         'Crawl log analysis',
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        style: Theme.of(context).textTheme.titleLarge,
       ),
       content: ConstrainedBox(
         constraints: BoxConstraints(
@@ -3157,45 +3345,52 @@ void _showLogAnalysisDialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // File name with semibold
               Text(
-                fileName, 
+                fileName,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontFamily: 'monospace',
-                  color: AppTheme.colorScheme.tertiary,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
                 )
               ),
               const SizedBox(height: 16),
                     
-              // Analysis stats - Pages analyzed
+              // Analysis stats - Pages analyzed with semibold label (not number)
               Row(
                 children: [
-                  Text(
-                    'Pages analysed: ', 
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    )
-                  ),
-                  Text(
-                    '14', 
+                  Text('Pages analysed: ', 
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                    )
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  Text('14', 
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
                     
               const SizedBox(height: 12),
                     
-              // Parameters section
+              // Parameters section with semibold label (not count)
               if (hasParameters) ...[
-                Text(
-                  'Parameters found (${parameters.length}): ', 
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  )
+                Row(
+                  children: [
+                    Text(
+                      'Parameters found', 
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      )
+                    ),
+                    Text(
+                      ' (${expandedParameters.length}): ',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                ...parameters.entries.map((entry) => 
+                ...expandedParameters.entries.map((entry) => 
                   Padding(
                     padding: const EdgeInsets.only(left: 16, bottom: 4),
                     child: Row(
@@ -3204,7 +3399,6 @@ void _showLogAnalysisDialog(
                           '${entry.key}: ', 
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.colorScheme.primary,
                           ),
                         ),
                         Expanded(
@@ -3219,9 +3413,10 @@ void _showLogAnalysisDialog(
                 ).toList(),
               ] else ...[
                 Text(
-                  'Parameters found: 0', 
+                  'Parameters found: 0',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.colorScheme.primary,
                   )
                 ),
               ],
@@ -3246,3 +3441,360 @@ void _showLogAnalysisDialog(
     ),
   );
 }
+
+  // Method for building checkmark items in the Fine-tune section
+  Widget _buildCheckmarkItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.check,
+            size: 16,
+            color: AppTheme.colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: AppTheme.textTheme.bodyMedium,
+          ),
+        ],
+    ),
+  );
+}
+
+// Method to show log filter dialog
+void _showLogFilterDialog(BuildContext context) {
+  // Filter options with preselection
+  final Map<String, List<String>> filterOptions = {
+    'Crawl status': ['processed', 'failed', 'skipped', 'other'],
+    'Response type': ['html', 'js', 'json', 'xml', 'css', 'image', 'other'],
+    'Response code': ['200-299', '300-399', '400-499', '500-599'],
+    'Warning type': ['redirectionToSelf', 'resourceUnderEnforcedPath', 'other'],
+  };
+  
+  // Track selected options (all pre-selected by default)
+  final Map<String, List<String>> selectedOptions = {};
+  
+  // Initialize all options as selected
+  filterOptions.forEach((key, options) {
+    selectedOptions[key] = List.from(options); // All preselected
+  });
+  
+  // Track regex value
+  TextEditingController regexController = TextEditingController();
+  final regexFocusNode = FocusNode();
+
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        // Function to toggle chip selection
+        void toggleChip(String category, String option) {
+          setState(() {
+            if (selectedOptions[category]!.contains(option)) {
+              selectedOptions[category]!.remove(option);
+            } else {
+              selectedOptions[category]!.add(option);
+            }
+          });
+        }
+        
+        return AlertDialog(
+          title: Text(
+            'Crawl log visualization filter',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          surfaceTintColor: Theme.of(context).colorScheme.surface,
+          content: SizedBox(
+            width: 800, // Set a wider fixed width
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Build filter sections with chips
+                  ...filterOptions.entries.map((entry) {
+                    final category = entry.key;
+                    final options = entry.value;
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            category,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        
+                        // Chips for each option in the category
+                        SizedBox(
+                          width: double.infinity,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minHeight: 56.0,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Wrap(
+                                spacing: 12.0,
+                                runSpacing: 12.0,
+                                children: options.map((option) {
+                                  final isSelected = selectedOptions[category]?.contains(option) ?? false;
+                                  
+                                  return FilterChip(
+                                    label: Text(option),
+                                    selected: isSelected,
+                                    onSelected: (_) => toggleChip(category, option),
+                                    avatar: isSelected ? const Icon(Icons.check, size: 18) : null,
+                                    backgroundColor: isSelected 
+                                      ? AppTheme.colorScheme.primaryContainer 
+                                      : AppTheme.colorScheme.surface,
+                                    selectedColor: AppTheme.colorScheme.primaryContainer,
+                                    labelStyle: TextStyle(
+                                      color: isSelected 
+                                        ? AppTheme.colorScheme.onPrimaryContainer
+                                        : AppTheme.colorScheme.onSurface,
+                                      fontSize: 14,
+                                    ),
+                                    showCheckmark: false,
+                                    side: BorderSide(
+                                      color: isSelected
+                                        ? Colors.transparent
+                                        : AppTheme.colorScheme.outlineVariant,
+                                      width: 1,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    padding: EdgeInsets.only(
+                                      right: 16, 
+                                      left: isSelected ? 8 : 16, 
+                                      top: 12, 
+                                      bottom: 12
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        const Divider(height: 1),
+                      ],
+                    );
+                  }).toList(),
+                  
+                  // Regex section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Regex header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'Regular expression filter',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      
+                      // Regex input field
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: TextField(
+                          controller: regexController,
+                          focusNode: regexFocusNode,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter pattern to filter log lines (leave empty to see all)',
+                            helperText: null,
+                            hintStyle: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                            filled: true,
+                            fillColor: const Color(0xFFF7F9FC),
+                          ),
+                        ),
+                      ),
+                      
+                      // Remove the divider line
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                textStyle: AppTheme.textTheme.labelLarge,
+              ),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                // Here you would typically use the selectedOptions and regex pattern
+                // to filter the logs before showing them
+                
+                // Get the regex pattern (if any)
+                final regexPattern = regexController.text.trim();
+                
+                // Log the selected options and regex pattern (for demo purposes)
+                if (regexPattern.isNotEmpty) {
+                  print('Applied regex pattern: $regexPattern');
+                }
+                filterOptions.forEach((category, _) {
+                  print('$category: ${selectedOptions[category]?.join(", ")}');
+                });
+                
+                Navigator.pop(context);
+              },
+              style: FilledButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                textStyle: AppTheme.textTheme.labelLarge,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Show log'),
+                  SizedBox(width: 8),
+                  Icon(Icons.open_in_new, size: 18),
+                ],
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 24, 16),
+          actionsAlignment: MainAxisAlignment.end,
+        );
+        },
+    ),
+  );
+}
+
+// Add this new widget for better hover handling
+class HoverableTextLink extends StatefulWidget {
+  final String text;
+  final IconData? icon;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final Color? iconColor;
+  final TextStyle? textStyle;
+  final double? iconSize;
+  final bool makeBoldOnHover;
+
+  const HoverableTextLink({
+    Key? key,
+    required this.text,
+    this.icon,
+    this.onTap,
+    this.enabled = true,
+    this.iconColor,
+    this.textStyle,
+    this.iconSize,
+    this.makeBoldOnHover = false,
+  }) : super(key: key);
+
+  @override
+  State<HoverableTextLink> createState() => _HoverableTextLinkState();
+}
+
+class _HoverableTextLinkState extends State<HoverableTextLink> {
+  bool isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color textColor = widget.enabled 
+        ? (isHovering ? AppTheme.colorScheme.primary : (widget.textStyle?.color ?? AppTheme.colorScheme.onSurface))
+        : AppTheme.colorScheme.onSurface;
+        
+    final TextStyle baseStyle = widget.textStyle ?? AppTheme.textTheme.bodyMedium!;
+    
+    return MouseRegion(
+      cursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: widget.enabled ? (_) => setState(() => isHovering = true) : null,
+      onExit: widget.enabled ? (_) => setState(() => isHovering = false) : null,
+      child: GestureDetector(
+        onTap: widget.enabled ? widget.onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center, // Ensure center alignment
+            children: [
+              Text(
+                widget.text,
+                style: baseStyle.copyWith(
+                  decoration: widget.enabled ? TextDecoration.underline : null,
+                  color: textColor,
+                  decorationColor: textColor,
+                  fontWeight: widget.makeBoldOnHover && isHovering ? FontWeight.bold : baseStyle.fontWeight,
+                ),
+              ),
+              if (widget.icon != null && widget.enabled) ...[
+                const SizedBox(width: 4),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2), // Small adjustment to align with text
+                  child: Icon(
+                    widget.icon,
+                    size: widget.iconSize ?? (baseStyle.fontSize! + 6), // Use provided size or calculate from text
+                    color: widget.iconColor ?? textColor,
+                    weight: widget.makeBoldOnHover && isHovering ? 700.0 : 400.0,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -13,170 +13,74 @@ class StatisticsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Revert to Dialog with custom layout matching the reference image style
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16), // Match reference image corner radius
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
         constraints: const BoxConstraints(
-          maxWidth: 900, // Increased width further
+          maxWidth: 820, // Adjusted from 850 to 820
+          maxHeight: 700,
         ),
-        padding: const EdgeInsets.all(24.0), // Overall padding
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Custom Header
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Statistics of pages processed this crawl', // Title from original stats
+                  'Statistics of pages processed this crawl',
                   style: AppTheme.textTheme.titleLarge?.copyWith(
-                    color: AppTheme.colorScheme.onSurface, // Standard dark text color
+                    color: AppTheme.colorScheme.onSurface,
                   ),
                 ),
-                Row( // Row for the icons
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Close',
-                      splashRadius: 20,
-                      color: AppTheme.colorScheme.onSurfaceVariant, // Subtle color for close icon
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Close',
+                  splashRadius: 20,
+                  color: AppTheme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
             const SizedBox(height: 24),
             
-            // Wrap the central content (headers and table cards) in Flexible/ScrollView
+            // Content
             Flexible(
               child: SingleChildScrollView(
-                child: Stack( // WRAPPED content column with Stack
+                child: Stack(
                   children: [
-                    Column( // This Column contains the headers and table cards
+                    Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Translatable Section Header (Now directly in dialog's Column)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0), // Removed horizontal padding for header
-                          child: Text(
-                            'Translatable',
-                            style: AppTheme.textTheme.bodyLarge?.copyWith( // Slightly larger than table body
-                              color: AppTheme.colorScheme.onSurface, // Changed color
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        // Card wrapping the Translatable DataTable
-                        Card(
-                          margin: EdgeInsets.zero, // Match main table card style
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8), // Consistent rounding
-                            side: BorderSide(color: AppTheme.colorScheme.outlineVariant, width: 1), // Consistent border
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: DataTable(
-                               columnSpacing: 12.0,
-                               headingRowHeight: 48,
-                               dataRowMinHeight: 40.0,
-                               dataRowMaxHeight: 40.0,
-                               headingRowColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
-                                 return AppTheme.colorScheme.surfaceVariant.withOpacity(0.5);
-                               }),
-                               headingTextStyle: AppTheme.textTheme.bodyMedium?.copyWith(
-                                 fontWeight: FontWeight.normal,
-                                 color: AppTheme.colorScheme.onSurfaceVariant,
-                               ),
-                               dataTextStyle: AppTheme.textTheme.bodyMedium?.copyWith(
-                                 color: AppTheme.colorScheme.onSurface // Standard text color for data
-                               ),
-                               dividerThickness: 1.0,
-                               showBottomBorder: true,
-                               columns: const [
-                                  DataColumn(label: Text('Match'), numeric: false),
-                                  DataColumn(label: Text('Segments'), numeric: false),
-                                  DataColumn(label: Text('Source words', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Latin characters'), numeric: false),
-                                  DataColumn(label: Text('Latin characters\nwith spaces'), numeric: false), 
-                                  DataColumn(label: Text('Asian glyphs'), numeric: false),
-                               ],
-                               rows: [
-                                  _buildStatsDataRow(['101%', '0', '0', '0', '0', '0']),
-                                  _buildStatsDataRow(['100%', '5', '7', '40', '42', '0']),
-                                  _buildStatsDataRow(['99%', '8', '14', '98', '105', '0']),
-                                  _buildStatsDataRow(['98%', '0', '0', '0', '0', '0']),
-                                  _buildStatsDataRow(['Unique', '252', '2,894', '17,061', '19,724', '0']),
-                                  _buildStatsDataRow(['Total translatable:', '265', '2,915', '17,199', '19,871', '0'], isTotal: true), 
-                               ],
-                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20), // Spacer between sections
-                        // Repeated Section Header (Now directly in dialog's Column)
-                        Padding( 
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0), // Removed horizontal padding for header
-                          child: Text(
-                            'Repeated (free)',
-                            style: AppTheme.textTheme.bodyLarge?.copyWith(
-                              color: AppTheme.colorScheme.onSurface, // Changed color
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        // Card wrapping the Repeated DataTable
-                        Card(
-                          margin: EdgeInsets.zero, // Match main table card style
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8), // Consistent rounding
-                            side: BorderSide(color: AppTheme.colorScheme.outlineVariant, width: 1), // Consistent border
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: DataTable(
-                              columnSpacing: 12.0,
-                              headingRowHeight: 48,
-                              dataRowMinHeight: 40.0,
-                              dataRowMaxHeight: 40.0,
-                              headingRowColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
-                                return AppTheme.colorScheme.surfaceVariant.withOpacity(0.5);
-                              }),
-                              headingTextStyle: AppTheme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.normal,
-                                color: AppTheme.colorScheme.onSurfaceVariant,
-                              ),
-                               dataTextStyle: AppTheme.textTheme.bodyMedium?.copyWith(
-                                 color: AppTheme.colorScheme.onSurface // Standard text color for data
-                               ),
-                              dividerThickness: 1.0,
-                              showBottomBorder: true,
-                              columns: const [
-                                DataColumn(label: Text('Match'), numeric: false),
-                                DataColumn(label: Text('Segments'), numeric: false),
-                                DataColumn(label: Text('Source words', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Latin characters'), numeric: false),
-                                DataColumn(label: Text('Latin characters\nwith spaces'), numeric: false),
-                                DataColumn(label: Text('Asian glyphs'), numeric: false),
-                              ],
-                              rows: [
-                                _buildStatsDataRow(['102%', '473', '3,272', '19,501', '22,361', '0']),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // Translatable section
+                        _buildSectionHeader(context, 'Translatable'),
+                        _buildTableCard(context, [
+                          _buildDataRow(['Match', 'Segments', 'Source words', 'Latin characters', 'Latin characters with spaces', 'Asian glyphs'], isHeader: true),
+                          _buildDataRow(['101%', '0', '0', '0', '0', '0']),
+                          _buildDataRow(['100%', '5', '7', '40', '42', '0']),
+                          _buildDataRow(['99%', '8', '14', '98', '105', '0']),
+                          _buildDataRow(['98%', '0', '0', '0', '0', '0']),
+                          _buildDataRow(['Unique', '252', '2,894', '17,061', '19,724', '0'], isUniqueRow: true),
+                          _buildDataRow(['Total translatable:', '265', '2,915', '17,199', '19,871', '0'], isTotal: true),
+                        ]),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Repeated section
+                        _buildSectionHeader(context, 'Repeated (free)'),
+                        _buildTableCard(context, [
+                          _buildDataRow(['Match', 'Segments', 'Source words', 'Latin characters', 'Latin characters with spaces', 'Asian glyphs'], isHeader: true),
+                          _buildDataRow(['102%', '473', '3,272', '19,501', '22,361', '0']),
+                        ]),
                       ],
                     ),
-                    // Positioned Copy Button
+                    
+                    // Copy button
                     Positioned(
                       top: 0,
                       right: 0,
@@ -186,25 +90,27 @@ class StatisticsDialog extends StatelessWidget {
                         tooltip: 'Copy to clipboard',
                         splashRadius: 20,
                         color: AppTheme.colorScheme.primary,
-                        visualDensity: VisualDensity.compact, // Reduce padding around icon
-                        constraints: const BoxConstraints(), // Remove default constraints
+                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
+            
             const SizedBox(height: 24),
-            // Custom Footer
+            
+            // Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 FilledButton(
                   style: FilledButton.styleFrom(
-                     foregroundColor: AppTheme.colorScheme.onPrimary,
-                     backgroundColor: AppTheme.colorScheme.primary,
-                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Adjust padding
-                     textStyle: AppTheme.textTheme.labelLarge,
+                    foregroundColor: AppTheme.colorScheme.onPrimary,
+                    backgroundColor: AppTheme.colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    textStyle: AppTheme.textTheme.labelLarge,
                   ),
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Close'),
@@ -217,21 +123,112 @@ class StatisticsDialog extends StatelessWidget {
     );
   }
 
-  // Helper to build DataRow (apply semi-bold style where needed)
-  DataRow _buildStatsDataRow(List<String> cells, {bool isTotal = false}) {
-    return DataRow(
-      cells: cells.asMap().entries.map((entry) {
+  // Helper to build section headers
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        title,
+        style: AppTheme.textTheme.bodyLarge?.copyWith(
+          color: AppTheme.colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  // Helper to build table card
+  Widget _buildTableCard(BuildContext context, List<TableRow> rows) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: AppTheme.colorScheme.outlineVariant, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SelectionArea(
+        child: Table(
+          border: TableBorder(
+            horizontalInside: BorderSide(
+              color: AppTheme.colorScheme.outlineVariant,
+              width: 1.0,
+            ),
+          ),
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          columnWidths: const {
+            0: FractionColumnWidth(0.20), // Match
+            1: FractionColumnWidth(0.12), // Segments (slightly reduced)
+            2: FractionColumnWidth(0.16), // Source words (slightly reduced)
+            3: FractionColumnWidth(0.16), // Latin characters (slightly reduced)
+            4: FractionColumnWidth(0.22), // Latin characters with spaces (increased)
+            5: FractionColumnWidth(0.14), // Asian glyphs (increased)
+          },
+          children: rows,
+        ),
+      ),
+    );
+  }
+
+  // Helper to build table rows
+  TableRow _buildDataRow(List<String> cells, {bool isHeader = false, bool isTotal = false, bool isUniqueRow = false}) {
+    return TableRow(
+      decoration: isHeader 
+          ? BoxDecoration(color: AppTheme.colorScheme.surfaceVariant.withOpacity(0.5))
+          : null,
+      children: cells.asMap().entries.map((entry) {
         int index = entry.key;
         String value = entry.value;
-        // Apply semi-bold style for 'Source words' column (index 2) or the entire total row
-        final bool isSemiBold = isTotal || index == 2;
+        
+        // Determine if this cell should be bold
+        bool makeTextBold = false;
+        
+        if (isHeader) {
+          // Make the Source words column header bold
+          makeTextBold = index == 2;
+        } else {
+          // Make entire row bold if it's the total row
+          if (isTotal) {
+            makeTextBold = true;
+          } 
+          // Make the Source words column (index 2) bold for all rows
+          else if (index == 2) {
+            makeTextBold = true;
+          }
+          // Make the "Unique" text bold
+          else if (isUniqueRow && index == 0) {
+            makeTextBold = true;
+          }
+        }
+        
+        // Adjust text style with slightly smaller font size
         final textStyle = AppTheme.textTheme.bodyMedium?.copyWith(
-          fontWeight: isSemiBold ? FontWeight.bold : FontWeight.normal,
-          // Ensure color is consistent with the table's dataTextStyle
-          color: AppTheme.colorScheme.onSurface, 
+          fontWeight: makeTextBold ? FontWeight.bold : FontWeight.normal,
+          color: isHeader
+              ? AppTheme.colorScheme.onSurfaceVariant
+              : AppTheme.colorScheme.onSurface,
+          fontSize: 13.0, // Reduced from default (~14) to 13
         );
-
-        return DataCell(Text(value, style: textStyle));
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // Reduced vertical padding from 12 to 10
+          child: index == 0
+              // First column is always left-aligned
+              ? Text(
+                  value, 
+                  style: textStyle,
+                  overflow: TextOverflow.visible,
+                )
+              // All other columns are right-aligned (including headers)
+              : Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    value, 
+                    style: textStyle,
+                    textAlign: TextAlign.right, // Explicitly set text alignment
+                  ),
+                ),
+        );
       }).toList(),
     );
   }
@@ -316,62 +313,5 @@ ${formatTable('Repeated (free)', headers, repeatedData)}
       default:
         return 'Unknown';
     }
-  }
-  
-  IconData _getStatusIcon(CrawlStatus status) {
-    switch (status) {
-      case CrawlStatus.completed:
-        return Icons.check_circle;
-      case CrawlStatus.inProgress:
-      case CrawlStatus.running:
-        return Icons.sync;
-      case CrawlStatus.queued:
-        return Icons.schedule;
-      case CrawlStatus.failed:
-        return Icons.error;
-      case CrawlStatus.canceled:
-        return Icons.cancel;
-      case CrawlStatus.canceledSchedule:
-        return Icons.event_busy;
-      default:
-        return Icons.help_outline;
-    }
-  }
-  
-  Color _getStatusColor(CrawlStatus status) {
-    switch (status) {
-      case CrawlStatus.completed:
-        return Colors.green;
-      case CrawlStatus.inProgress:
-      case CrawlStatus.running:
-        return Colors.blue;
-      case CrawlStatus.queued:
-        return Colors.orange;
-      case CrawlStatus.failed:
-        return Colors.red;
-      case CrawlStatus.canceled:
-        return Colors.grey;
-      case CrawlStatus.canceledSchedule:
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Widget _buildTerminationReasonRow(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.info_outline, size: 18, color: AppTheme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'Termination Reason: ${crawlItem.terminationReason}',
-            style: AppTheme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 } 

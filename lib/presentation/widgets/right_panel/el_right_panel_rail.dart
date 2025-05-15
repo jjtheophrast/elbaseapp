@@ -64,14 +64,15 @@ class ELRightPanelRail<T extends Enum> extends ConsumerWidget {
               color: Theme.of(context).colorScheme.surface,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              padding: const EdgeInsets.only(top: 0, bottom: 16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: List.generate(destinations.length, (index) {
                   final isSelected = selectedIndex == index;
                   final destination = destinations[index];
+                  final paddingTop = index == 0 ? 16.0 : 8.0;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: EdgeInsets.only(top: paddingTop, bottom: 8.0),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
