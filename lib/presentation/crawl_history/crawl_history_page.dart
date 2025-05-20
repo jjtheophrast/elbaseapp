@@ -54,17 +54,17 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     ELRightPanelDestination(
       icon: Icon(Icons.info_outline_rounded),
       label: 'Settings Summary',
-      tooltip: 'View crawl settings',
+      tooltip: 'Crawl details',
     ),
     ELRightPanelDestination(
       icon: Icon(Icons.format_list_numbered_rtl_outlined),
       label: 'Requests',
-      tooltip: 'View requests statistics',
+      tooltip: 'Requests statistics',
     ),
     ELRightPanelDestination(
       icon: Icon(Icons.manage_search_outlined),
       label: 'Logs',
-      tooltip: 'View crawl logs',
+      tooltip: 'Crawl logs',
     ),
   ];
   // --- End Right Panel Destinations ---
@@ -365,7 +365,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
         // Define panel widget
         final Widget panel = ELRightPanelContainer(
           panelProvider: crawlDetailsPanelProvider,
-          title: 'Settings summary',
+          title: 'Crawl details',
           onCancel: () => ref.read(crawlDetailsPanelProvider.notifier).state = null,
           children: [
             // Use a constrained box to ensure minimum width
@@ -801,9 +801,40 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
               ],
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             
-            // No footnote needed anymore as we use tooltips instead
+            // Add "View logs for more details" link button
+            Center(
+              child: InkWell(
+                onTap: () {
+                  // Navigate to the logs panel
+                  ref.read(crawlDetailsPanelProvider.notifier).state = CrawlDetailsPanel.logs;
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'See logs for more details',
+                        style: AppTheme.textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.navigate_next,
+                        size: 16,
+                        color: AppTheme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
           ],
         );
         return panel; // Return as Widget
@@ -1106,9 +1137,9 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     // Define consistent tooltips for recurring tab and history tabs
     final String recurringRequestsTooltip = 'Requests statistics are only available after a crawl has run';
     final String recurringLogsTooltip = 'Logs are only available after a crawl has run';
-    final String settingsTooltip = 'Select a crawl from the table to view settings';
-    final String requestsTooltip = 'Select a crawl from the table to view request statistics';
-    final String logsTooltip = 'Select a crawl from the table to view logs';
+    final String settingsTooltip = 'Select a crawl from the table to see crawl details';
+    final String requestsTooltip = 'Select a crawl from the table to see request statistics';
+    final String logsTooltip = 'Select a crawl from the table to see logs';
     
     // Create panel destinations with appropriate disabled states and improved tooltips
     final List<ELRightPanelDestination> activePanelDestinations = [
@@ -1682,8 +1713,8 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
     if (_selectedCrawlItem == null) {
       // Determine the appropriate message for the current tab
       final String message = _tabController.index == 0
-          ? 'Please select a crawl item from the table to view details'
-          : 'Please select a recurring crawl from the table to view details';
+          ? 'Please select a crawl item from the table to see details'
+          : 'Please select a recurring crawl from the table to see details';
       
       // Show guidance snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1865,6 +1896,15 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
            );
         } else if (value == 'stats') {
           _viewStatistics(context, item);
+        } else if (value == 'crawl_details') {
+          _viewCrawlDetails(context, item);
+          ref.read(crawlDetailsPanelProvider.notifier).state = CrawlDetailsPanel.details;
+        } else if (value == 'requests') {
+          _viewCrawlDetails(context, item);
+          ref.read(crawlDetailsPanelProvider.notifier).state = CrawlDetailsPanel.requestSummary;
+        } else if (value == 'logs') {
+          _viewCrawlDetails(context, item);
+          ref.read(crawlDetailsPanelProvider.notifier).state = CrawlDetailsPanel.logs;
         }
       },
       itemBuilder: (context) {
@@ -1878,7 +1918,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
         
         List<PopupMenuEntry<String>> menuItems = [];
 
-        // 1. View statistics option - First item
+        // 1. Word statistics - First item (if applicable)
         if (showStats) {
           menuItems.add(
             PopupMenuItem<String>(
@@ -1893,7 +1933,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'View statistics',
+                    'Word statistics',
                     style: AppTheme.textTheme.bodyMedium?.copyWith(
                       color: AppTheme.colorScheme.onSurface,
                     ),
@@ -1904,7 +1944,83 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
           );
         }
 
-        // 2. Refresh status - Second item (only for running/in progress)
+        // 2. Crawl details
+        menuItems.add(
+          PopupMenuItem<String>(
+            value: 'crawl_details',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: AppTheme.colorScheme.onSurface.withOpacity(0.6),
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Crawl details',
+                  style: AppTheme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // 3. Requests (if not queued)
+        if (!isQueued) {
+          menuItems.add(
+            PopupMenuItem<String>(
+              value: 'requests',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.format_list_numbered_rtl_outlined,
+                    color: AppTheme.colorScheme.onSurface.withOpacity(0.6),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Requests',
+                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // 4. Logs (if not queued)
+        if (!isQueued) {
+          menuItems.add(
+            PopupMenuItem<String>(
+              value: 'logs',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.manage_search_outlined,
+                    color: AppTheme.colorScheme.onSurface.withOpacity(0.6),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Logs',
+                    style: AppTheme.textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // 5. Refresh status - For running/in progress
         if (isRunningOrInProgress) {
           menuItems.add(
             PopupMenuItem<String>(
@@ -1930,7 +2046,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
           );
         }
 
-        // 3. Rerun with same settings - Last item (only for completed, failed, or canceled crawls)
+        // 6. Rerun with same settings - Only for completed, failed, or canceled crawls
         if (item.status == CrawlStatus.completed || 
             item.status == CrawlStatus.failed || 
             item.status == CrawlStatus.canceled || 
@@ -1964,7 +2080,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
           );
         }
 
-        // 4. Cancel crawl - Last item (if queued or running/in progress)
+        // 7. Cancel crawl - Last item (if queued or running/in progress)
         if (isQueued || isRunningOrInProgress) {
           menuItems.add(
             PopupMenuItem<String>(
@@ -2005,13 +2121,13 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
       onSelected: (value) {
         if (value == 'cancel') {
           _cancelRecurrence(context, item);
-        } else if (value == 'view_settings') {
+        } else if (value == 'crawl_details') {
           _viewCrawlDetails(context, item, isRecurringView: true);
         }
       },
       itemBuilder: (context) => [
         PopupMenuItem<String>(
-          value: 'view_settings',
+          value: 'crawl_details',
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2021,7 +2137,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
                 color: AppTheme.colorScheme.onSurface.withOpacity(0.8),
               ),
               const SizedBox(width: 8),
-              Text('View crawl settings'),
+              Text('Crawl details'),
             ],
           ),
         ),
@@ -2683,7 +2799,7 @@ class _CrawlHistoryPageState extends ConsumerState<CrawlHistoryPage> with Single
       pageLimitDisplay = item.pageLimit != null ? " / ${numberFormat.format(item.pageLimit!)}" : "";
     } else if (item.status == CrawlStatus.failed && item.visitedPages == 73) {
       formattedVisitedPages = numberFormat.format(item.visitedPages);
-      pageLimitDisplay = " / -";  // Changed from ∞ to -
+      pageLimitDisplay = " / —";  // Format as "/ em-dash"
     } else if (item.terminationReason == "No more pages left" && item.pageLimit != null) {
       // When terminated due to no more pages, show full limit
       formattedVisitedPages = numberFormat.format(item.pageLimit!);
